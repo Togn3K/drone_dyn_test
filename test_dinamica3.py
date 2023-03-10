@@ -1,32 +1,42 @@
 import numpy as np
-from scipy.integrate import ode 
+from scipy.integrate import odeint 
 import time
 
-def skw(x):
-    return np.array([
-        [0, -x[2,0], x[1,0]],
-        [x[2,0], 0, -x[0,0]],
-        [-x[1,0], x[0,0], 0]
-    ], dtype=np.float128)
+def sKw(x):
+    x = x.flatten()
+    Y = np.array([[0, -x[2], x[1]], [x[2], 0, -x[0]], [-x[1], x[0], 0]], dtype=np.float64)
+    return Y
 
 
-def dynamic(t, y, m, im, g, f, wh, kw):
-    zeta = np.vstack(np.array([0, 0, 1], dtype=np.float128))
-    gv = np.vstack(np.array([0, 0, -1], dtype=np.float128)) * g 
-    p = y[:3].reshape((3,1))
-    v = y[3:6].reshape((3,1))
-    R = y[6:15].reshape((3,3))
-    w = y[15:18].reshape((3,1))
+def drone_dyn(state, t, g, m, inertia_matrix, w_r, f_thrust, kw, kv):
+    # Drone state
+    state = np.expand_dims(state, axis=1)
 
-    tau = - np.dot(kw, w-wh)
+    # rpy
+    w_r = w_r.reshape(3, 1)
+    kv = kv.reshape(3, 1)
 
-    dp = v 
-    dv = np.dot(R, zeta, (f/m+gv))
-    dR = np.dot(R, skw(w))
-    dw = np.dot(np.linalg.inv(im), (np.dot(skw(np.dot(im, w)), w) + tau))
+    # Variables and Parameters
+    zeta = np.array([0, 0, 1]).reshape(3, 1)
+    gv = np.array([0, 0, -1]).reshape(3, 1) * g
+    p = state[0: 3, 0]
+    v = state[3: 6, 0].reshape(3, 1)
+    R = state[6: 15].reshape(3, 3)
+    w = state[15: 18, 0].reshape(3, 1)
 
-    dx = np.concatenate((dp, dv, dR.reshape((9,1)), dw))
-    return dx
+    # Low-level attitude controller
+    tau = -kw * (w - w_r)
+    f_drag = kv * v
+
+    # Drone Dynamics
+    dp = v
+    dv = (np.dot(R, zeta) * f_thrust - f_drag) / m + gv
+    dR = np.dot(R, sKw(w))
+    dw = np.dot(np.linalg.inv(inertia_matrix), np.dot(sKw(np.dot(inertia_matrix, w)), w) + tau)
+
+    # Output
+    d_state = np.concatenate((dp.reshape(-1, 1), dv, dR.reshape(-1, 1), dw.reshape(-1, 1)), axis=0).squeeze()
+    return d_state
 
 
 def lambda_dyn(dlam, lk, Ts):
@@ -47,18 +57,18 @@ if __name__ == "__main__":
     Ts = 1./100
     Tend = 10 
     N = Tend/Ts 
-    p = np.vstack(np.array([0,0,0], dtype=np.float128))
-    v = np.vstack(np.array([0,0,0], dtype=np.float128))
+    p = np.vstack(np.array([0,0,0], dtype=np.float64))
+    v = np.vstack(np.array([0,0,0], dtype=np.float64))
     R = np.eye(3)
-    w = np.vstack(np.array([0,0,0], dtype=np.float128))
-    xr = np.vstack(np.array([0,0,0.4,0,0,0,0,0,0,0,0,0], dtype=np.float128))
+    w = np.vstack(np.array([0,0,0], dtype=np.float64))
+    xr = np.vstack(np.array([0,0,0.4,0,0,0,0,0,0,0,0,0], dtype=np.float64))
     m = 1
     mnom = 1
     im = np.diag([1,1,1])*0.05
     kth = 5 
     kw = np.linalg.norm(im)*50
     lk = np.log(m/mnom*g)
-    rp = np.vstack(np.array([0,0,0], dtype=np.float128))
+    rp = np.vstack(np.array([0,0,0], dtype=np.float64))
     KdA = np.array([
         [ 0.9793, -0.1393, -0.0083, -0.0007,  0.0002,  0.0000,  0.0001],
         [ 0.1393,  0.3086,  0.1195,  0.0086, -0.0019, -0.0004, -0.0008],
@@ -67,7 +77,7 @@ if __name__ == "__main__":
         [ 0.0002,  0.0019, -0.0011, -0.0001,  0.9999, -0.0000, -0.0000],
         [-0.0000, -0.0004,  0.0002,  0.0000,  0.0000,  1.0000, -0.0008],
         [ 0.0001,  0.0008, -0.0004, -0.0000, -0.0000,  0.0008,  0.9998]
-    ], dtype=np.float128)
+    ], dtype=np.float64)
     KdB = np.array([
         [-0.0552],
         [ 0.2768],
@@ -76,8 +86,8 @@ if __name__ == "__main__":
         [-0.0001],
         [ 0.0000],
         [-0.0000]
-    ], dtype=np.float128)
-    kdC = np.array([1.5577, 47.8875, -5.6419, -0.3678, 0.0652, 0.0148, 0.0273], dtype=np.float128)
+    ], dtype=np.float64)
+    kdC = np.array([1.5577, 47.8875, -5.6419, -0.3678, 0.0652, 0.0148, 0.0273], dtype=np.float64)
     kdD = 0
     xest1 = np.zeros((len(KdA), 1))
     xest2 = np.zeros((len(KdA), 1))
@@ -86,29 +96,29 @@ if __name__ == "__main__":
         [ 0.9703, -0.0148, -0.0099],
         [ 0.0197,  0.9999, -0.0001],
         [ 0.0000,  0.0050,  1.0000]
-    ], dtype=np.float128)
+    ], dtype=np.float64)
     Bf = np.array([
         [ 0.0099],
         [ 0.0001],
         [ 0.0000]
-    ], dtype=np.float128)
-    Cf = np.array([0, 0, 1], dtype=np.float128)
+    ], dtype=np.float64)
+    Cf = np.array([0, 0, 1], dtype=np.float64)
     Df = 0
     xf1 = np.array([
         [0], 
         [0], 
         [xr[0,0] - p[0,0]]
-    ], dtype=np.float128)
+    ], dtype=np.float64)
     xf2 = np.array([
         [0], 
         [0], 
         [xr[1,0] - p[1,0]]
-    ], dtype=np.float128)
+    ], dtype=np.float64)
     xf3 = np.array([
         [0], 
         [0], 
         [xr[2,0] - p[2,0]]
-    ], dtype=np.float128)
+    ], dtype=np.float64)
     Xin = np.concatenate((p, v, R.reshape(9,1), w))
     for i in range(int(N)):
         pr = xr[0:3,:]
@@ -142,12 +152,11 @@ if __name__ == "__main__":
         dlam = q[2][0]
         # print("dlam: {}, lk: {}, Ts: {}".format(dlam, lk, Ts))
         lk = lambda_dyn(dlam, lk, Ts)
-        solver = ode(dynamic).set_integrator('dopri5')
-        solver.set_initial_value(Xin, Tin).set_f_params(m, im, g, fk, wtr, kw)
-        while solver.successful() and solver.t < Tin+Ts:
-            solver.integrate(solver.t + Ts)
-        Xin = solver.y 
-        Tin = solver.t 
+        t = [Tin, Tin + Ts]
+        print(Xin)
+        Xin = odeint(drone_dyn, Xin.squeeze(), t, args=(g, m, im, wtr, fk, w, v))
+        print(Xin)
+        Tin = Tin + Ts
         p = Xin[0:3][:]
         v = Xin[3:6][:]
         R = Xin[6:15][:].reshape((3,3))
