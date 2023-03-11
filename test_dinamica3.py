@@ -36,6 +36,7 @@ def drone_dyn(state, t, g, m, inertia_matrix, w_r, f_thrust, kw, kv):
 
     # Output
     d_state = np.concatenate((dp.reshape(-1, 1), dv, dR.reshape(-1, 1), dw.reshape(-1, 1)), axis=0).squeeze()
+    #print("d_state: {}\n".format(d_state))
     return d_state
 
 
@@ -140,7 +141,7 @@ if __name__ == "__main__":
         u = - np.vstack([u1, u2, u3])
         omega3 = yaw_control(R, yp, kth)
         fk = np.exp(lk) * mnom
-        print(lk)
+        # print("lk: {}".format(lk))
         # print(R.T)
         # print(u)
         q = np.exp(-lk) * np.dot(R.T, u)
@@ -153,12 +154,15 @@ if __name__ == "__main__":
         # print("dlam: {}, lk: {}, Ts: {}".format(dlam, lk, Ts))
         lk = lambda_dyn(dlam, lk, Ts)
         t = [Tin, Tin + Ts]
-        print(Xin)
-        Xin = odeint(drone_dyn, Xin.squeeze(), t, args=(g, m, im, wtr, fk, w, v))
-        print(Xin)
+        # print(Xin)
+        Xout = odeint(drone_dyn, Xin.squeeze(), t, args=(g, m, im, wtr, fk, w, v))
+        Xin = np.vstack(Xout[-1])
+        # print(Xin)
+        # print("----------------------------")
         Tin = Tin + Ts
         p = Xin[0:3][:]
         v = Xin[3:6][:]
         R = Xin[6:15][:].reshape((3,3))
         w = Xin[15:18][:]
+        print(p)
         # time.sleep(0.1)

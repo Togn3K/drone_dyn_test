@@ -18,12 +18,12 @@ def dynamic(t, y, m, im, g, f, wh, kw):
     R = y[6:15].reshape((3,3))
     w = y[15:18].reshape((3,1))
 
-    tau = - np.dot(kw, w-wh)
+    tau = - kw * (w-wh)
 
     dp = v 
-    dv = np.dot(R, zeta, (f/m+gv))
+    dv = (np.dot(R, zeta) * f) / m + gv
     dR = np.dot(R, skw(w))
-    dw = np.dot(np.linalg.inv(im), (np.dot(skw(np.dot(im, w)), w) + tau))
+    dw = np.dot(np.linalg.inv(im), (np.dot(skw(np.dot(im, w)), w)) + tau)
 
     dx = np.concatenate((dp, dv, dR.reshape((9,1)), dw))
     return dx
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         u = - np.vstack([u1, u2, u3])
         omega3 = yaw_control(R, yp, kth)
         fk = np.exp(lk) * mnom
-        print(lk)
+        # print(lk)
         # print(R.T)
         # print(u)
         q = np.exp(-lk) * np.dot(R.T, u)
@@ -153,3 +153,4 @@ if __name__ == "__main__":
         R = Xin[6:15][:].reshape((3,3))
         w = Xin[15:18][:]
         # time.sleep(0.1)
+        print(p)
