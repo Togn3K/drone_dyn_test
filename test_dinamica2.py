@@ -7,12 +7,12 @@ def skw(x):
         [0, -x[2,0], x[1,0]],
         [x[2,0], 0, -x[0,0]],
         [-x[1,0], x[0,0], 0]
-    ], dtype=np.float128)
+    ])
 
 
 def dynamic(t, y, m, im, g, f, wh, kw):
-    zeta = np.vstack(np.array([0, 0, 1], dtype=np.float128))
-    gv = np.vstack(np.array([0, 0, -1], dtype=np.float128)) * g 
+    zeta = np.vstack(np.array([0, 0, 1]))
+    gv = np.vstack(np.array([0, 0, -1])) * g 
     p = y[:3].reshape((3,1))
     v = y[3:6].reshape((3,1))
     R = y[6:15].reshape((3,3))
@@ -45,20 +45,20 @@ if __name__ == "__main__":
     g = 9.8
     Tin = 0
     Ts = 1./100
-    Tend = 10 
+    Tend = 100
     N = Tend/Ts 
-    p = np.vstack(np.array([0,0,0], dtype=np.float128))
-    v = np.vstack(np.array([0,0,0], dtype=np.float128))
+    p = np.vstack(np.array([0,0,0]))
+    v = np.vstack(np.array([0,0,0]))
     R = np.eye(3)
-    w = np.vstack(np.array([0,0,0], dtype=np.float128))
-    xr = np.vstack(np.array([0,0,0.4,0,0,0,0,0,0,0,0,0], dtype=np.float128))
+    w = np.vstack(np.array([0,0,0]))
+    xr = np.vstack(np.array([0,0,0.4,0,0,0,0,0,0,0,0,0]))
     m = 1
     mnom = 1
     im = np.diag([1,1,1])*0.05
     kth = 5 
     kw = np.linalg.norm(im)*50
     lk = np.log(m/mnom*g)
-    rp = np.vstack(np.array([0,0,0], dtype=np.float128))
+    rp = np.vstack(np.array([0,0,0]))
     KdA = np.array([
         [ 0.9793, -0.1393, -0.0083, -0.0007,  0.0002,  0.0000,  0.0001],
         [ 0.1393,  0.3086,  0.1195,  0.0086, -0.0019, -0.0004, -0.0008],
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         [ 0.0002,  0.0019, -0.0011, -0.0001,  0.9999, -0.0000, -0.0000],
         [-0.0000, -0.0004,  0.0002,  0.0000,  0.0000,  1.0000, -0.0008],
         [ 0.0001,  0.0008, -0.0004, -0.0000, -0.0000,  0.0008,  0.9998]
-    ], dtype=np.float128)
+    ])
     KdB = np.array([
         [-0.0552],
         [ 0.2768],
@@ -76,8 +76,8 @@ if __name__ == "__main__":
         [-0.0001],
         [ 0.0000],
         [-0.0000]
-    ], dtype=np.float128)
-    kdC = np.array([1.5577, 47.8875, -5.6419, -0.3678, 0.0652, 0.0148, 0.0273], dtype=np.float128)
+    ])
+    kdC = np.array([1.5577, 47.8875, -5.6419, -0.3678, 0.0652, 0.0148, 0.0273])
     kdD = 0
     xest1 = np.zeros((len(KdA), 1))
     xest2 = np.zeros((len(KdA), 1))
@@ -86,29 +86,29 @@ if __name__ == "__main__":
         [ 0.9703, -0.0148, -0.0099],
         [ 0.0197,  0.9999, -0.0001],
         [ 0.0000,  0.0050,  1.0000]
-    ], dtype=np.float128)
+    ])
     Bf = np.array([
         [ 0.0099],
         [ 0.0001],
         [ 0.0000]
-    ], dtype=np.float128)
-    Cf = np.array([0, 0, 1], dtype=np.float128)
+    ])
+    Cf = np.array([0, 0, 1])
     Df = 0
     xf1 = np.array([
         [0], 
         [0], 
         [xr[0,0] - p[0,0]]
-    ], dtype=np.float128)
+    ])
     xf2 = np.array([
         [0], 
         [0], 
         [xr[1,0] - p[1,0]]
-    ], dtype=np.float128)
+    ])
     xf3 = np.array([
         [0], 
         [0], 
         [xr[2,0] - p[2,0]]
-    ], dtype=np.float128)
+    ])
     Xin = np.concatenate((p, v, R.reshape(9,1), w))
     for i in range(int(N)):
         pr = xr[0:3,:]
