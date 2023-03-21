@@ -135,7 +135,7 @@ class DroneLQR:
         yp = observation["p"]
         R = observation["R"]
         yaw = observation["yaw"]
-        # print("observation: {}".format(observation))
+        #print("observation: {}".format(observation))
         '''
         rf1 = np.dot(self.Cf, self.xf1) + np.dot(self.Df, self.rp[0][0])
         self.xf1 = np.dot(self.Af, self.xf1) + np.dot(self.Bf, self.rp[0][0])
@@ -159,7 +159,7 @@ class DroneLQR:
         self.xest2 = np.dot(self.KdA, self.xest2) + np.dot(self.KdB, inpcop[1][0]) 
         u3 = np.dot(self.kdC, self.xest3) + np.dot(self.kdD, inpcop[2][0]) 
         self.xest3 = np.dot(self.KdA, self.xest3) + np.dot(self.KdB, inpcop[2][0]) 
-        u = - np.vstack([u1, u2, u3])
+        u = np.vstack([u1, u2, u3])
 
         # omega3 = yaw_control(R, yaw, self.kth)
         omega3 = 0
@@ -168,7 +168,7 @@ class DroneLQR:
         q = np.exp(-self.lk) * np.dot(R.T, u)
         # print("q: {}".format(q))
         '''
-        f = mnom * lk
+        f = self.mnom * self.lk
         q = np.dot(R.T, u)
         wtr = np.zeros((3, 1))
         wtr[0][0] = -q[1][0] / lk 
@@ -187,13 +187,13 @@ if __name__ == "__main__":
     g = 9.8
     Tin = 0
     Ts = 1./100
-    Tend = 30 
+    Tend = 10 
     N = Tend/Ts 
     p = np.vstack(np.array([0,0,0]))
     v = np.vstack(np.array([0,0,0]))
     R = np.eye(3)
     w = np.vstack(np.array([0,0,0]))
-    xr = np.vstack(np.array([0,0,1,0,0,0,0,0,0,0,0,0]))
+    xr = np.vstack(np.array([1,1,1,0,0,0,0,0,0,0,0,0]))
     m = 1
     mnom = 1
     im = np.diag([1,1,1])*0.05
@@ -211,6 +211,7 @@ if __name__ == "__main__":
         obs = {"p": yp, "R": R, "yaw": yh}
 
         wtr, fk = drone.perform_action(obs)
+        #print(fk)
 
         solver = ode(dynamic).set_integrator('dopri5')
         solver.set_initial_value(Xin, Tin).set_f_params(m, im, g, fk, wtr, kw)
@@ -222,5 +223,5 @@ if __name__ == "__main__":
         v = Xin[3:6][:]
         R = Xin[6:15][:].reshape((3,3))
         w = Xin[15:18][:]
-        # time.sleep(0.01)
+        time.sleep(0.001)
         print("[{}/{}] {}".format(i+1, int(N), p.flatten()))
